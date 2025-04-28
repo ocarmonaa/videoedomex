@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const GITHUB_USER = 'ocarmonaa';
     const GITHUB_REPO = 'videoedomex';
     const FILE_PATH = 'videos.txt';
-    const GITHUB_TOKEN = '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';
+    const GITHUB_TOKEN = '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';
     
     const API_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
     
