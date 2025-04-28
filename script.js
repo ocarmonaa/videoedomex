@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Configurar con tu URL de Google Apps Script
-    const API_URL = 'TU_URL_DE_APPS_SCRIPT';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyP4KPR1WcuMjRExCDcmQLGDtKSUSuCA3SYaZzkQI3FKlWsNRJWBPzsCzp8ixrlV8S0/exec';
 
     const elementos = {
         btnNuevaReunion: document.getElementById('btnNuevaReunion'),
