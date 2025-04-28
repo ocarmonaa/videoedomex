@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const GITHUB_USER = 'ocarmonaa';          // Cambiar por tu usuario
     const GITHUB_REPO = 'videoedomex';      // Cambiar por tu repositorio
     const FILE_PATH = 'videos.txt';            // Archivo en tu repositorio
-    const GITHUB_TOKEN = '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';           // ¡NUNCA PUBLICAR ESTO!
+    const GITHUB_TOKEN = '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';           // ¡NUNCA PUBLICAR ESTO!
     
     const API_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
     
