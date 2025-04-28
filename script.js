@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Configurar con tu URL de Google Apps Script
-    const API_URL = 'https://script.google.com/macros/s/AKfycby8TNWV6tn6IpFczf36xB6hbeXJfAKtHoH20zdd-7HmjOOThgdNU0ryXXInbiVWiazU/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwcu-9BRgADQRbRBqheyzcINSO1G83ES8onNCE-SgRuN46-5Xa569uieNif5k0W4Xmw/exec';
 
     const elementos = {
         btnNuevaReunion: document.getElementById('btnNuevaReunion'),
@@ -62,14 +62,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             });
 
-            if (!response.ok) throw new Error('Error al guardar');
+            const result = await response.json();
+            if (result.status !== 'success') throw new Error(result.message || 'Error al guardar');
             
             mostrarMensaje('Datos guardados exitosamente');
             await cargarDatos();
             return true;
         } catch (error) {
             console.error('Error:', error);
-            mostrarMensaje('Error al guardar datos', true);
+            mostrarMensaje('Error al guardar: ' + error.message, true);
             return false;
         }
     }
@@ -149,15 +150,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             });
 
-            if (!response.ok) throw new Error('Error al eliminar');
+            const result = await response.json();
+            if (result.status !== 'success') throw new Error(result.message || 'Error al eliminar');
             
             mostrarMensaje('Reunión eliminada');
             await cargarDatos();
             cerrarModal(elementos.modalDetalles);
         } catch (error) {
             console.error('Error:', error);
-            mostrarMensaje('Error al eliminar', true);
+            mostrarMensaje('Error al eliminar: ' + error.message, true);
         }
+    }
+
+    function editarReunion(id) {
+        const reunion = reuniones.find(r => r.id === id);
+        if (!reunion) return;
+
+        reunionEditando = id;
+        document.getElementById('modalTitulo').textContent = 'Editar Videoconferencia';
+        document.getElementById('titulo').value = reunion.titulo;
+        document.getElementById('fecha').value = reunion.fecha;
+        document.getElementById('horaInicio').value = reunion.horaInicio;
+        document.getElementById('horaTerminacion').value = reunion.horaTerminacion;
+        document.getElementById('area').value = reunion.area;
+        document.getElementById('lugar').value = reunion.lugar;
+        document.getElementById('liga').value = reunion.liga;
+        document.getElementById('participantes').value = reunion.participantes;
+        document.getElementById('estado').value = reunion.estado;
+        document.getElementById('conclusiones').value = reunion.conclusiones || '';
+        
+        elementos.grupoConclusiones.style.display = reunion.estado === 'realizada' ? 'block' : 'none';
+        elementos.modalReunion.style.display = 'block';
+        cerrarModal(elementos.modalDetalles);
     }
 
     function formatearFecha(fechaString) {
@@ -191,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.style.display = 'none';
     }
 
+    // Event Listeners
     document.querySelectorAll('.btn-cerrar-modal').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.modal').forEach(modal => {
@@ -249,36 +274,38 @@ document.addEventListener('DOMContentLoaded', function() {
         cargarReuniones();
     });
 
+    // Inicialización
     cargarDatos();
+
+    // Funciones de ayuda para filtros
+    function obtenerFiltrosActivos() {
+        return {
+            estado: document.getElementById('filtroEstado').value,
+            fecha: document.getElementById('filtroFecha').value,
+            area: document.getElementById('filtroArea').value,
+            busqueda: document.getElementById('buscarReunion').value.trim().toLowerCase()
+        };
+    }
+
+    function filtrarPorEstado(reunion, estado) {
+        return estado === 'todas' || reunion.estado === estado;
+    }
+
+    function filtrarPorFecha(reunion, fecha) {
+        if (!fecha) return true;
+        const fechaReunion = new Date(reunion.fecha).setHours(0,0,0,0);
+        const fechaFiltro = new Date(fecha).setHours(0,0,0,0);
+        return fechaReunion === fechaFiltro;
+    }
+
+    function filtrarPorArea(reunion, area) {
+        return area === 'todas' || reunion.area === area;
+    }
+
+    function filtrarPorBusqueda(reunion, busqueda) {
+        if (!busqueda) return true;
+        return reunion.titulo.toLowerCase().includes(busqueda) ||
+               reunion.area.toLowerCase().includes(busqueda) ||
+               reunion.participantes.toLowerCase().includes(busqueda);
+    }
 });
-
-function obtenerFiltrosActivos() {
-    return {
-        estado: document.getElementById('filtroEstado').value,
-        fecha: document.getElementById('filtroFecha').value,
-        area: document.getElementById('filtroArea').value,
-        busqueda: document.getElementById('buscarReunion').value.trim().toLowerCase()
-    };
-}
-
-function filtrarPorEstado(reunion, estado) {
-    return estado === 'todas' || reunion.estado === estado;
-}
-
-function filtrarPorFecha(reunion, fecha) {
-    if (!fecha) return true;
-    const fechaReunion = new Date(reunion.fecha).setHours(0,0,0,0);
-    const fechaFiltro = new Date(fecha).setHours(0,0,0,0);
-    return fechaReunion === fechaFiltro;
-}
-
-function filtrarPorArea(reunion, area) {
-    return area === 'todas' || reunion.area === area;
-}
-
-function filtrarPorBusqueda(reunion, busqueda) {
-    if (!busqueda) return true;
-    return reunion.titulo.toLowerCase().includes(busqueda) ||
-           reunion.area.toLowerCase().includes(busqueda) ||
-           reunion.participantes.toLowerCase().includes(busqueda);
-}
