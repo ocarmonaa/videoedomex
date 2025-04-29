@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // URL de la API de Google Apps Script (debes reemplazarla con tu URL real)
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyGnmqnfQLYFUAJor30KAQlVtIyx1hC-2MRMZe4SQYPfKuqAKWjQ8ueBOqFMvateAgV/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzH_sgqyCqJTETjVrVrEedNz5uEQhPwCvoarr9LB_4xkk178vj0aBd0F_tX4A1tQKY/exec';
 
     // Selección de todos los elementos del DOM con verificación
     const elementos = {
