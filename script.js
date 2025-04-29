@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurar con tu URL de Google Apps Script
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwcu-9BRgADQRbRBqheyzcINSO1G83ES8onNCE-SgRuN46-5Xa569uieNif5k0W4Xmw/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyG_cSjbkvWtJr1ouwePKVXEY5VFxsS0GXvKZ-PzoDAiNTscOpPGUIjQVmypE_o67IT/exec'; // REEMPLAZAR CON TU URL
 
     const elementos = {
         btnNuevaReunion: document.getElementById('btnNuevaReunion'),
@@ -37,16 +36,19 @@ document.addEventListener('DOMContentLoaded', function() {
     async function cargarDatos() {
         try {
             elementos.listaReuniones.innerHTML = '<p class="cargando">Cargando datos...</p>';
-            
             const response = await fetch(`${API_URL}?action=get`);
-            if (!response.ok) throw new Error('Error al cargar datos');
             
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Error ${response.status}: ${errorText}`);
+            }
+
             reuniones = await response.json();
             actualizarContadores();
             cargarReuniones();
         } catch (error) {
             console.error('Error:', error);
-            mostrarMensaje('Error al cargar datos', true);
+            mostrarMensaje(`Error al cargar datos: ${error.message}`, true);
             elementos.listaReuniones.innerHTML = '<p class="error">Error al cargar datos</p>';
         }
     }
@@ -215,7 +217,6 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.style.display = 'none';
     }
 
-    // Event Listeners
     document.querySelectorAll('.btn-cerrar-modal').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.modal').forEach(modal => {
@@ -274,10 +275,6 @@ document.addEventListener('DOMContentLoaded', function() {
         cargarReuniones();
     });
 
-    // Inicialización
-    cargarDatos();
-
-    // Funciones de ayuda para filtros
     function obtenerFiltrosActivos() {
         return {
             estado: document.getElementById('filtroEstado').value,
@@ -308,4 +305,6 @@ document.addEventListener('DOMContentLoaded', function() {
                reunion.area.toLowerCase().includes(busqueda) ||
                reunion.participantes.toLowerCase().includes(busqueda);
     }
+
+    cargarDatos();
 });
