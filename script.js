@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyGnmqnfQLYFUAJor30KAQlVtIyx1hC-2MRMZe4SQYPfKuqAKWjQ8ueBOqFMvateAgV/exec';
+    // Asegúrate de que esta URL es la correcta de tu despliegue
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyWSA7BiNZPjjvQS4Is9GY2CzVlnCl3V4fAa-fCfysRi0IBQPaDz4pPRdcn7iADJIHr/exec';
 
     const elementos = {
         btnNuevaReunion: document.getElementById('btnNuevaReunion'),
@@ -33,20 +34,25 @@ document.addEventListener('DOMContentLoaded', function() {
     async function cargarDatos() {
         try {
             elementos.listaReuniones.innerHTML = '<p class="cargando">Cargando datos...</p>';
-            const response = await fetch(`${API_URL}?action=get`);
+            const response = await fetch(API_URL);
             
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error ${response.status}: ${errorText}`);
+                throw new Error(`Error HTTP: ${response.status}`);
             }
-
-            reuniones = await response.json();
+            
+            const result = await response.json();
+            
+            if (result.status !== 'success') {
+                throw new Error(result.message || 'Error al cargar datos');
+            }
+            
+            reuniones = result.data || [];
             actualizarContadores();
             cargarReuniones();
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error al cargar datos:', error);
             mostrarMensaje(`Error al cargar datos: ${error.message}`, true);
-            elementos.listaReuniones.innerHTML = '<p class="error">Error al cargar datos</p>';
+            elementos.listaReuniones.innerHTML = '<p class="error">Error al cargar datos. Intenta recargar la página.</p>';
         }
     }
 
@@ -54,26 +60,70 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch(API_URL, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
                     action: 'save',
                     data: reunionData
                 })
             });
 
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
             const result = await response.json();
-            if (result.status !== 'success') throw new Error(result.message || 'Error al guardar');
+            
+            if (result.status !== 'success') {
+                throw new Error(result.message || 'Error al guardar');
+            }
             
             mostrarMensaje('Datos guardados exitosamente');
             await cargarDatos();
-            return true;
+            return result.id || reunionData.id;
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error al guardar:', error);
             mostrarMensaje('Error al guardar: ' + error.message, true);
             return false;
         }
     }
 
+    async function eliminarReunion(id) {
+        if (!confirm('¿Eliminar esta videoconferencia permanentemente?')) return;
+        
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'delete',
+                    id: id
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.status !== 'success') {
+                throw new Error(result.message || 'Error al eliminar');
+            }
+            
+            mostrarMensaje('Reunión eliminada');
+            await cargarDatos();
+            cerrarModal(elementos.modalDetalles);
+        } catch (error) {
+            console.error('Error al eliminar:', error);
+            mostrarMensaje('Error al eliminar: ' + error.message, true);
+        }
+    }
+
+    // Resto de las funciones permanecen igual...
     function cargarReuniones() {
         elementos.listaReuniones.innerHTML = '';
         const filtros = obtenerFiltrosActivos();
@@ -121,8 +171,12 @@ document.addEventListener('DOMContentLoaded', function() {
         elementos.detalleArea.textContent = reunion.area;
         elementos.detalleLugar.textContent = reunion.lugar;
         
-        elementos.detalleLiga.href = reunion.liga?.startsWith('http') ? reunion.liga : `https://${reunion.liga}`;
-        elementos.detalleLiga.style.display = reunion.liga ? 'inline' : 'none';
+        if (reunion.liga) {
+            elementos.detalleLiga.href = reunion.liga.startsWith('http') ? reunion.liga : `https://${reunion.liga}`;
+            elementos.detalleLiga.style.display = 'inline';
+        } else {
+            elementos.detalleLiga.style.display = 'none';
+        }
         
         elementos.detalleParticipantes.textContent = reunion.participantes;
         elementos.detalleEstado.textContent = formatearEstado(reunion.estado);
@@ -133,37 +187,13 @@ document.addEventListener('DOMContentLoaded', function() {
         elementos.modalDetalles.style.display = 'block';
     }
 
-    async function eliminarReunion(id) {
-        if (!confirm('¿Eliminar esta videoconferencia permanentemente?')) return;
-        
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    action: 'delete',
-                    id: id
-                })
-            });
-
-            const result = await response.json();
-            if (result.status !== 'success') throw new Error(result.message || 'Error al eliminar');
-            
-            mostrarMensaje('Reunión eliminada');
-            await cargarDatos();
-            cerrarModal(elementos.modalDetalles);
-        } catch (error) {
-            console.error('Error:', error);
-            mostrarMensaje('Error al eliminar: ' + error.message, true);
-        }
-    }
-
     function editarReunion(id) {
         const reunion = reuniones.find(r => r.id === id);
         if (!reunion) return;
 
         reunionEditando = id;
         document.getElementById('modalTitulo').textContent = 'Editar Videoconferencia';
+        document.getElementById('reunionId').value = reunion.id;
         document.getElementById('titulo').value = reunion.titulo;
         document.getElementById('fecha').value = reunion.fecha;
         document.getElementById('horaInicio').value = reunion.horaInicio;
@@ -221,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         const reunionData = {
-            id: reunionEditando || Date.now().toString(),
+            id: document.getElementById('reunionId').value || Utilities.getUuid(),
             titulo: document.getElementById('titulo').value,
             fecha: document.getElementById('fecha').value,
             horaInicio: document.getElementById('horaInicio').value,
@@ -236,6 +266,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const exito = await guardarDatos(reunionData);
         if (exito) {
             cerrarModal(elementos.modalReunion);
+            elementos.formReunion.reset();
+            reunionEditando = null;
         }
     });
 
@@ -243,6 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
         reunionEditando = null;
         document.getElementById('modalTitulo').textContent = 'Nueva Videoconferencia';
         elementos.formReunion.reset();
+        document.getElementById('reunionId').value = '';
         elementos.estadoSelect.value = 'pendiente';
         
         const ahora = new Date();
@@ -263,10 +296,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function obtenerFiltrosActivos() {
         return {
-            estado: document.getElementById('filtroEstado').value,
-            fecha: document.getElementById('filtroFecha').value,
-            area: document.getElementById('filtroArea').value,
-            busqueda: document.getElementById('buscarReunion').value.trim().toLowerCase()
+            estado: elementos.filtroEstado.value,
+            fecha: elementos.filtroFecha.value,
+            area: elementos.filtroArea.value,
+            busqueda: elementos.buscarReunion.value.trim().toLowerCase()
         };
     }
 
@@ -287,10 +320,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function filtrarPorBusqueda(reunion, busqueda) {
         if (!busqueda) return true;
-        return reunion.titulo.toLowerCase().includes(busqueda) ||
-               reunion.area.toLowerCase().includes(busqueda) ||
-               reunion.participantes.toLowerCase().includes(busqueda);
+        return (reunion.titulo && reunion.titulo.toLowerCase().includes(busqueda)) ||
+               (reunion.area && reunion.area.toLowerCase().includes(busqueda)) ||
+               (reunion.participantes && reunion.participantes.toLowerCase().includes(busqueda));
     }
 
+    // Inicializar la aplicación
     cargarDatos();
 });
