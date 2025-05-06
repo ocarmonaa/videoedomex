@@ -407,6 +407,9 @@ function editarReunion(id) {
 function formatearFecha(fechaString) {
     try {
         const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        // Corregido: Manejo correcto de la fecha considerando la zona horaria
+        const fechaObj = new Date(fechaString);
+        const fechaString = new Date(fechaObj.getTime() + Math.abs(fechaObj.getTimezoneOffset() * 60000));
         return new Date(fechaString).toLocaleDateString('es-ES', opciones);
     } catch {
         return fechaString;
